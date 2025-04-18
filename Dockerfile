@@ -6,13 +6,11 @@ WORKDIR /synctv
 
 COPY ./ ./
 
-RUN apk add --no-cache bash curl git g++
+# 安装必要工具，但移除 g++ 以避免 CGO 依赖
+RUN apk add --no-cache bash curl git
 
-RUN curl -sL \
-    https://raw.githubusercontent.com/zijiren233/go-build-action/refs/tags/v1/build.sh | \
-    bash -s -- \
-    --version=${VERSION} \
-    --bin-name-no-suffix
+# 自定义编译，禁用 CGO 和高级优化
+RUN GOARCH=amd64 GOOS=linux CGO_ENABLED=0 go build -o build/synctv -gcflags="-spectre=off" -ldflags="-w -X github.com/synctv-org/synctv/utils.AppVersion=${VERSION}"
 
 FROM alpine:latest
 
